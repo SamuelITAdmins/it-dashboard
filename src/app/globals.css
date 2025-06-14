@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
+/* Colors Grabbed from Samuel Marketing */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --White: #ffffff;
+  --Red: #ec2626;
+  --Black: #000000;
+  --samuel-green: #7da05e;
+  --medium-dark: #333132;
+  --medium-white: #F6F6F6;
+  --samuel-dark-green: #0f390a;
+  --green: #69b064;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Dark theme (default) */
+  --background: var(--medium-dark);
+  --text: var(--White);
+}
+
+[data-theme="light"] {
+  /* Light theme */
+  --background: var(--medium-white);
+  --text: var(--Black);
+}
+
+.primary-button {
+  background: var(--samuel-green)
 }

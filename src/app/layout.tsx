@@ -8,6 +8,7 @@ const carlito = Carlito({
   style: ['normal', 'italic'],
   subsets: ['latin'],
   display: 'swap',
+  variable: '--font-carlito',
 });
 
 export const metadata: Metadata = {
@@ -21,10 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${carlito.className}`}
-      >
+    <html lang="en" className={carlito.className}>
+      <body>
         {children}
       </body>
     </html>
