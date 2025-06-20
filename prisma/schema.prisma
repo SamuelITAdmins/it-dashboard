@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id              Int             @id @default(autoincrement())
+  azureId         String          @unique @map("azure_id")
+  name            String
+  email           String
+  role            String  
+  locationId      Int             @map("location_id")
+  location        Locations       @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade) 
+}
+
+model Locations {
+  id              Int             @id @default(autoincrement())
+  name            String
+  state           String
+  timezone        String
+}
+
+model Services {
+  id              Int             @id @default(autoincrement())
+  name            String
+  apiEndpoint     String          @unique @map("api_endpoint")
+  isActive        Boolean         @map("is_active")
+}
+
+model DataCollectionRuns {
+  id              Int             @id @default(autoincrement())
+  startedAt       DateTime        @map("started_at")
+  completedAt     DateTime        @map("completed_at")
+  status          String
+  errorMessage?   String          @map("error_message")
+  userId          Int             @map("user_id")
+  user            Users           @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  serviceId       Int             @map("service_id")
+  service         Services        @relation(fields: [serviceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Metrics {
+  id              Int             @id @default(autoincrement())
+  metricType      String          @map("metric_type")
+  metricValue     String          @map("metric_value")
+  unit            String
+  collectedAt     DateTime        @map("collected_at")
+}
+
+model Assets {
+  id              Int             @id @default(autoincrement())
+  assetType       String          @map("asset_type")
+  assetName       String          @map("asset_name")
+  serialNum       String          @map("serial_num")
+  status          String
+  locationId      Int             @map("location_id")
+  location        Locations       @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Tickets {
+  id              Int             @id @default(autoincrement())
+  title           String
+  status          String
+  priority        String
+  createdAt       DateTime        @map("created_at")
+  resolvedAt?     DateTime        @map("resolved_at")
+  complianceMet?  DateTime        @map("compliance_met")
+  locationId      Int             @map("location_id")
+  location        Locations       @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId          Int             @map("user_id")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade) 
+}
