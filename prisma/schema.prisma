@@ -9,69 +9,90 @@ datasource db {
 }
 
 model Users {
-  id              Int             @id @default(autoincrement())
-  azureId         String          @unique @map("azure_id")
-  name            String
-  email           String
-  role            String  
-  locationId      Int             @map("location_id")
-  location        Locations       @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade) 
+  id                  Int             @id @default(autoincrement())
+  azureId             String          @unique @map("azure_id")
+  name                String
+  email               String          @unique
+  jobTitle            String?         @map("job_title")
+  department          String?
+  companyName         String?         @map("company_name")
+  city                String?
+  isActive            Boolean         @default(true) @map("is_active")
+  azureCreatedAt      DateTime?       @map("azure_created_at")
+  lastSignIn          DateTime?       @map("last_sign_in")
+  
+  lastUpdatedAt       DateTime        @updatedAt @map("last_updated_at")
+  locationId          Int?                  @map("location_id")
+  location            Locations?            @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  dataCollectionRuns  DataCollectionRuns[]
+  tickets             Tickets[]
 }
 
 model Locations {
-  id              Int             @id @default(autoincrement())
-  name            String
-  state           String
-  timezone        String
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  state               String
+  timezone            String
+  users               Users[]
+  assets              Assets[]
+  tickets             Tickets[]
+  metrics             Metrics[]
 }
 
 model Services {
-  id              Int             @id @default(autoincrement())
-  name            String
-  apiEndpoint     String          @unique @map("api_endpoint")
-  isActive        Boolean         @map("is_active")
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  apiEndpoint         String                @unique @map("api_endpoint")
+  isActive            Boolean               @map("is_active")
+  dataCollectionRuns  DataCollectionRuns[]
+  metrics             Metrics[]
 }
 
 model DataCollectionRuns {
-  id              Int             @id @default(autoincrement())
-  startedAt       DateTime        @map("started_at")
-  completedAt     DateTime        @map("completed_at")
-  status          String
-  errorMessage?   String          @map("error_message")
-  userId          Int             @map("user_id")
-  user            Users           @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  serviceId       Int             @map("service_id")
-  service         Services        @relation(fields: [serviceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id                  Int                   @id @default(autoincrement())
+  startedAt           DateTime              @map("started_at")
+  completedAt         DateTime              @map("completed_at")
+  status              String
+  errorMessage        String?               @map("error_message")
+  userId              Int                   @map("user_id")
+  user                Users                 @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  serviceId           Int                   @map("service_id")
+  service             Services              @relation(fields: [serviceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Metrics {
-  id              Int             @id @default(autoincrement())
-  metricType      String          @map("metric_type")
-  metricValue     String          @map("metric_value")
-  unit            String
-  collectedAt     DateTime        @map("collected_at")
+  id                  Int                   @id @default(autoincrement())
+  metricType          String                @map("metric_type")
+  metricValue         Decimal               @map("metric_value")
+  unit                String
+  collectedAt         DateTime              @map("collected_at")
+  weekEnding          DateTime              @map("week_ending")
+  serviceId           Int                   @map("service_id")
+  service             Services              @relation(fields: [serviceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  locationId          Int?                  @map("location_id")
+  location            Locations?            @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Assets {
-  id              Int             @id @default(autoincrement())
-  assetType       String          @map("asset_type")
-  assetName       String          @map("asset_name")
-  serialNum       String          @map("serial_num")
-  status          String
-  locationId      Int             @map("location_id")
-  location        Locations       @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id                  Int                   @id @default(autoincrement())
+  assetType           String                @map("asset_type")
+  assetName           String                @map("asset_name")
+  serialNum           String                @map("serial_num")
+  status              String
+  locationId          Int                   @map("location_id")
+  location            Locations             @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Tickets {
-  id              Int             @id @default(autoincrement())
-  title           String
-  status          String
-  priority        String
-  createdAt       DateTime        @map("created_at")
-  resolvedAt?     DateTime        @map("resolved_at")
-  complianceMet?  DateTime        @map("compliance_met")
-  locationId      Int             @map("location_id")
-  location        Locations       @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId          Int             @map("user_id")
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade) 
+  id                  Int                   @id @default(autoincrement())
+  title               String
+  status              String
+  priority            String
+  createdAt           DateTime              @map("created_at")
+  resolvedAt          DateTime?             @map("resolved_at")
+  complianceMet       Boolean?              @map("compliance_met")
+  locationId          Int?                  @map("location_id")
+  location            Locations?            @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId              Int                   @map("user_id")
+  user                Users                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade) 
 }
