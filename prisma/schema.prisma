@@ -19,7 +19,6 @@ model Users {
   city                String?
   isActive            Boolean               @default(true) @map("is_active")
   azureCreatedAt      DateTime?             @map("azure_created_at")
-  lastSignIn          DateTime?             @map("last_sign_in")
   
   lastUpdatedAt       DateTime              @updatedAt @map("last_updated_at")
   locationId          Int?                  @map("location_id")
