@@ -71,7 +71,7 @@ export async function fetchAzureUsers(): Promise<AzureUser[]> {
   const allUsers: AzureUser[] = []
   let pageCount = 0
   
-  while (url && pageCount < 10) { // Safety limit
+  while (url && pageCount < 50) { // Safety limit
     pageCount++
     console.log(`Fetching page ${pageCount}...`)
     
