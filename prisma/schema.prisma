@@ -83,7 +83,7 @@ model Assets {
 
 model Tickets {
   id                  Int                   @id @default(autoincrement())
-  title               String
+  subject             String
   status              String
   priority            String
   createdAt           DateTime              @map("created_at")
