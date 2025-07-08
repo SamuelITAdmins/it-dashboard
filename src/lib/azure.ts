@@ -47,13 +47,13 @@ async function getAccessToken(): Promise<string> {
     body: body.toString()
   })
 
-  const responseText = await response.text()
-
   if (!response.ok) {
-    throw new Error(`Token request failed: ${response.status} - ${responseText}`)
+    const errorText = await response.text()
+    console.error('Token request failed:', response.status, errorText)
+    throw new Error(`Token request failed: ${response.status} - ${errorText}`)
   }
 
-  const data: TokenResponse = JSON.parse(responseText)
+  const data: TokenResponse = JSON.parse(await response.text())
   console.log('Got access token')
   return data.access_token
 }
