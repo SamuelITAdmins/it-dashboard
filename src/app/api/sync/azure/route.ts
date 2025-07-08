@@ -3,6 +3,7 @@ import { fetchAzureUsers, mapAzureUserToDb } from "@/lib/azure";
 
 export async function POST() {
   try {
+    console.log('Fetching Azure users...')
     const azureUsers = await fetchAzureUsers()
 
     for (const azureUser of azureUsers) {
