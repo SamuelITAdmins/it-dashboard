@@ -10,7 +10,7 @@ datasource db {
 model Users {
   id                  Int                   @id @default(autoincrement())
   azureId             String                @unique @map("azure_id")
-  freshServiceId      String?               @unique @map("fs_id")
+  fsUserId            String?               @unique @map("fs_user_id")
 
   // Azure data
   name                String
@@ -90,7 +90,7 @@ model Assets {
 
 model Tickets {
   id                  Int                   @id @default(autoincrement())
-  freshServiceId      String                @unique @map("fs_id")
+  fsTicketId          String                @unique @map("fs_ticket_id")
 
   // FreshSerice data
   subject             String
@@ -103,14 +103,16 @@ model Tickets {
   firstResponseTime   Int?                  @map("first_resp_time")
   resolutionTime      Int?                  @map("resolution_time")
   complianceMet       Boolean?              @map("compliance_met")
+  fsRequesterId       String?               @map("fs_requester_id")
   requesterEmail      String?               @map("requester_email") // backup for unmatched users
+  fsAssigneeId        String?               @map("fs_assignee_id")
   assigneeEmail       String?               @map("assignee_email")
 
   // Relations
   locationId          Int?                  @map("location_id")
-  location            Locations?            @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  requesterId         String?               @map("fs_requester_id")
-  requester           Users?                @relation("TicketRequester", fields: [requesterId], references: [freshServiceId], onDelete: Cascade, onUpdate: Cascade)
-  assigneeId          String?               @map("fs_assignee_id")
-  assignee            Users?                @relation("TicketAssignee", fields: [assigneeId], references: [freshServiceId], onDelete: Cascade, onUpdate: Cascade)
+  location            Locations?            @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  requesterId         Int?                  @map("requester_id")
+  requester           Users?                @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  assigneeId          Int?                  @map("assignee_id")
+  assignee            Users?                @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 }

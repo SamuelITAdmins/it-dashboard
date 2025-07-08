@@ -1,3 +1,5 @@
+import { prisma } from '@/lib/prisma'
+
 interface FSTicket {
   subject: string
   category?: string
@@ -186,11 +188,11 @@ export function createAgentEmailMap(fsAgents: FSAgent[]): Map<string, string> {
   return agentEmailMap
 }
 
-function mapFSTicketToDb(fsTicket: FSTicket, agentEmailMap: Map<string, string>) {
+export function mapFSTicketToDb(fsTicket: FSTicket, agentEmailMap: Map<string, string>) {
   const assigneeEmail = fsTicket.responder_id ? agentEmailMap.get(fsTicket.responder_id) : null
 
   return {
-    freshServiceId: fsTicket.stats.ticket_id.toString(),
+    fsTicketId: fsTicket.stats.ticket_id.toString(),
     subject: fsTicket.subject,
     category: fsTicket.category || null,
     status: convertStatus(fsTicket.status),
@@ -200,9 +202,34 @@ function mapFSTicketToDb(fsTicket: FSTicket, agentEmailMap: Map<string, string>)
     resolvedAt: fsTicket.stats.resolved_at ? new Date(fsTicket.stats.resolved_at) : null,
     firstResponseTime: fsTicket.stats.first_resp_time_in_secs || null,
     resolutionTime: fsTicket.stats.resolution_time_in_secs || null, 
-    requesterId: fsTicket.requester_id?.toString(),
+    fsRequesterId: fsTicket.requester_id?.toString(),
     requesterEmail: fsTicket.requester.email,
-    assigneeId: fsTicket.responder_id?.toString(),
+    fsAssigneeId: fsTicket.responder_id?.toString(),
     assigneeEmail: assigneeEmail
+  }
+}
+
+export async function resolveUserIds(ticketData: any, agentEmailMap: Map<string, string>) {
+  // Get requester by email
+  const requester = await prisma.users.findUnique({
+    where: { email: ticketData.requesterEmail }
+  })
+  
+  // Get assignee by email (if assigned)
+  let assignee = null
+  if (ticketData.fsAssigneeId && agentEmailMap.has(ticketData.fsAssigneeId)) {
+    const assigneeEmail = agentEmailMap.get(ticketData.fsAssigneeId)
+    assignee = await prisma.users.findUnique({
+      where: { email: assigneeEmail }
+    })
+  }
+  
+  return {
+    ...ticketData,
+    requesterId: requester?.id || null,
+    assigneeId: assignee?.id || null,
+    // Keep Freshservice IDs for audit trail
+    fsRequesterId: ticketData.fsRequesterId,
+    fsAssigneeId: ticketData.fsAssigneeId,
   }
 }
