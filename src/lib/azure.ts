@@ -118,7 +118,6 @@ export function mapAzureUserToDb(azureUser: AzureUser) {
     department: azureUser.department || null,
     companyName: azureUser.companyName || null,
     city: azureUser.city || null,
-    isActive: azureUser.accountEnabled ?? true,
     azureCreatedAt: azureUser.createdDateTime && azureUser.createdDateTime !== 'None' 
       ? new Date(azureUser.createdDateTime) 
       : null,

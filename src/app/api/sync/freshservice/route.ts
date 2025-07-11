@@ -1,6 +1,6 @@
 // src/app/api/sync/freshservice/route.ts
 import { prisma } from "@/lib/prisma"
-import { fetchFSTickets, fetchFSAgents, createAgentEmailMap, mapFSTicketToDb, resolveUserIds } from "@/lib/freshservice"
+import { fetchFSTickets, fetchFSAgents, createAgentEmailMap, resolveTicketUserIds, mapFSTicketToDb } from "@/lib/freshservice"
 
 export async function POST() {
   try {
@@ -15,18 +15,23 @@ export async function POST() {
     const fsTickets = await fetchFSTickets()
 
     for (const fsTicket of fsTickets) {
-      // Map ticket data
-      const ticketData = mapFSTicketToDb(fsTicket, agentEmailMap)
-      
-      // Resolve user relationships
-      const ticketWithUserIds = await resolveUserIds(ticketData, agentEmailMap)
+      try {
+        // Match requester and responder ids
+        const userIds = await resolveTicketUserIds(fsTicket, agentEmailMap)
 
-      // Upsert to database
-      await prisma.tickets.upsert({
-        where: { fsTicketId: ticketWithUserIds.fsTicketId },
-        update: ticketWithUserIds,
-        create: ticketWithUserIds
-      })
+        // Map ticket data
+        const ticketData = mapFSTicketToDb(fsTicket, userIds)
+
+        // Upsert to database
+        await prisma.tickets.upsert({
+          where: { fsTicketId: ticketData.fsTicketId },
+          update: ticketData,
+          create: ticketData
+        })
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error(`Skipping ticket ${fsTicket.stats.ticket_id}:`, errorMessage)
+      }
     }
 
     return Response.json({
