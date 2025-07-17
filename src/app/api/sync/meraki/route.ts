@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { fetchDeviceHistories, fetchDevices, getOrgId } from "@/lib/meraki"
+import { calculateUptimes, fetchDeviceHistories, fetchDevices, getOrgId } from "@/lib/meraki"
 
 export async function POST() {
   try {
@@ -9,11 +9,11 @@ export async function POST() {
     console.log('Fetching devices...')
     let devices = await fetchDevices(orgId)
 
-    console.log('Fetching device hisories...')
+    console.log('Fetching device histories...')
     devices = await fetchDeviceHistories(orgId, devices)
 
     console.log('Calculating device uptime...')
-    // devices = 
+    calculateUptimes(devices)
 
     return Response.json({
       success: true,
