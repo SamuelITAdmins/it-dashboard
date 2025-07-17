@@ -51,7 +51,7 @@ export async function getOrgId(): Promise<string> {
     );
     
     if (response.ok && response.data.length > 0) {
-      console.log(response.data[0].id)
+      console.log(response.data[0].id);
       return response.data[0].id;
     } else {
       throw new Error("No organizations found");
@@ -63,7 +63,7 @@ export async function getOrgId(): Promise<string> {
 }
 
 export async function fetchDevices(orgId: string): Promise<Device[]> {
-  const deviceTypes = ['switch','wireless','sensor']
+  const deviceTypes = ['switch','wireless','sensor'];
   const productTypesQuery = deviceTypes.map(type => `productTypes[]=${type}`).join('&');
 
   try {
@@ -79,7 +79,7 @@ export async function fetchDevices(orgId: string): Promise<Device[]> {
     );
 
     if (response.ok && response.data.length > 0) {
-      return response.data
+      return response.data;
     } else {
       throw new Error("No devices found");
     }
@@ -90,8 +90,8 @@ export async function fetchDevices(orgId: string): Promise<Device[]> {
 }
 
 export async function fetchDeviceHistories(orgId: string, devices: Device[], reportLength?: number): Promise<Device[]> {
-  const reportTimeSecs = reportLength ? reportLength*24*60*60 : 7*24*60*60
-  const deviceTypes = ['switch','wireless','sensor']
+  const reportTimeSecs = reportLength ? reportLength*24*60*60 : 7*24*60*60;
+  const deviceTypes = ['switch','wireless','sensor'];
   const productTypesQuery = deviceTypes.map(type => `productTypes[]=${type}`).join('&');
 
   try {
@@ -107,15 +107,15 @@ export async function fetchDeviceHistories(orgId: string, devices: Device[], rep
     );
 
     if (response.ok) {
-      const fullHistory = response.data.reverse() // put in chronological order
+      const fullHistory = response.data.reverse(); // put in chronological order
 
       devices.forEach((device: Device) => {
-        device.updateHistory = fullHistory.filter(record => record.device.serial === device.serial)
+        device.updateHistory = fullHistory.filter(record => record.device.serial === device.serial);
       });
 
-      return devices
+      return devices;
     } else {
-      throw new Error(`Unknown device history error.`)
+      throw new Error(`Unknown device history error.`);
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -125,40 +125,40 @@ export async function fetchDeviceHistories(orgId: string, devices: Device[], rep
 
 export function calculateUptimes(devices: Device[], reportLength?: number) {
   if (!devices) {
-    throw new Error("No devices found for calculating uptimes.")
+    throw new Error("No devices found for calculating uptimes.");
   }
 
   devices.forEach((device: Device) => {
-    let uptimeMS = 0
+    let uptimeMS = 0;
 
     // initialize time and status
-    const present = new Date()
-    const daysBack = reportLength || 7
+    const present = new Date();
+    const daysBack = reportLength || 7;
     const reportStartTime = new Date(present);
     reportStartTime.setDate(reportStartTime.getDate() - daysBack);
 
-    let curTime = present
-    let curStatus = device.status
+    let curTime = present;
+    let curStatus = device.status;
 
     device.updateHistory?.forEach((entry: ChangeHistory) => {
       // update times and statuses
-      let prevTime = curTime
-      curTime = new Date(entry.ts)
-      curStatus = entry.details.new[0].value
+      const prevTime = curTime;
+      curTime = new Date(entry.ts);
+      curStatus = entry.details.new[0].value;
 
       // calculate uptime
       if (curStatus === 'online') {
-        uptimeMS += prevTime.getTime() - curTime.getTime()
+        uptimeMS += prevTime.getTime() - curTime.getTime();
       }
-    })
+    });
 
     if (curStatus === 'online') {
       uptimeMS += curTime.getTime() - reportStartTime.getTime();
     }
-    console.log(device.name)
-    console.log(uptimeMS)
-    device.uptimePercentage = uptimeMS / (present.getTime() - reportStartTime.getTime()) * 100
-    console.log(device.uptimePercentage)
-    console.log('')
-  })
+    console.log(device.name);
+    console.log(uptimeMS);
+    device.uptimePercentage = uptimeMS / (present.getTime() - reportStartTime.getTime()) * 100;
+    console.log(device.uptimePercentage);
+    console.log('');
+  });
 }
