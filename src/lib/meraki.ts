@@ -123,6 +123,7 @@ export async function fetchDeviceHistories(orgId: string, devices: Device[], rep
   }
 }
 
+// TODO: Calculate uptimes only during core work hours for APs
 export function calculateUptimes(devices: Device[], reportLength?: number) {
   if (!devices) {
     throw new Error("No devices found for calculating uptimes.");
@@ -137,28 +138,28 @@ export function calculateUptimes(devices: Device[], reportLength?: number) {
     const reportStartTime = new Date(present);
     reportStartTime.setDate(reportStartTime.getDate() - daysBack);
 
-    let curTime = present;
-    let curStatus = device.status;
+    let startTime = reportStartTime;
+    let startStatus = device.updateHistory?.[0]?.details.old[0].value || device.status;
 
     device.updateHistory?.forEach((entry: ChangeHistory) => {
-      // update times and statuses
-      const prevTime = curTime;
-      curTime = new Date(entry.ts);
-      curStatus = entry.details.new[0].value;
+      const changeTime = new Date(entry.ts);
 
       // calculate uptime
-      if (curStatus === 'online') {
-        uptimeMS += prevTime.getTime() - curTime.getTime();
+      if (startStatus === 'online') {
+        uptimeMS += changeTime.getTime() - startTime.getTime();
       }
+
+      // update times and statuses
+      startTime = changeTime;
+      startStatus = entry.details.new[0].value;
     });
 
-    if (curStatus === 'online') {
-      uptimeMS += curTime.getTime() - reportStartTime.getTime();
+    // add uptime from last status change to present
+    if (startStatus === 'online') {
+      uptimeMS += present.getTime() - startTime.getTime();
     }
-    console.log(device.name);
-    console.log(uptimeMS);
-    device.uptimePercentage = uptimeMS / (present.getTime() - reportStartTime.getTime()) * 100;
-    console.log(device.uptimePercentage);
-    console.log('');
+
+    const totalReportTime = present.getTime() - reportStartTime.getTime();
+    device.uptimePercentage = (uptimeMS / totalReportTime) * 100;
   });
 }
