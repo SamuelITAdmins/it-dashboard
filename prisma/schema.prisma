@@ -38,6 +38,7 @@ model Locations {
   timezone            String
   users               Users[]
   assets              Assets[]
+  networkDevices      NetworkDevices[]
   tickets             Tickets[]
   metrics             Metrics[]
 }
@@ -84,6 +85,21 @@ model Assets {
   status              String
   locationId          Int                   @map("location_id")
   location            Locations             @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model NetworkDevices {
+  id                  Int                   @id @default(autoincrement())
+  merakiDeviceId      String                @unique @map("meraki_device_id")
+
+  // Meraki data
+  name                String                
+  productType         String                @map("product_type")
+  status              String                
+  uptimePercentage    Decimal               @map("uptime_percentage")
+
+  // Relations
+  locationId          Int?                  @map("location_id")
+  location            Locations?            @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Tickets {

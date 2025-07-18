@@ -2,6 +2,9 @@ import { apiRequest } from "@cisco-meraki/dashboard-api-tools";
 
 interface Device {
   name: string
+  network: {
+    id: string
+  }
   productType: string
   serial: string
   status: string
@@ -162,4 +165,14 @@ export function calculateUptimes(devices: Device[], reportLength?: number) {
     const totalReportTime = present.getTime() - reportStartTime.getTime();
     device.uptimePercentage = (uptimeMS / totalReportTime) * 100;
   });
+}
+
+export function mapMerakiDeviceToDb(device: Device) {
+  return {
+    merakiDeviceId: device.serial,
+    name: device.name,
+    productType: device.productType,
+    status: device.status,
+    uptimePercentage: device.uptimePercentage
+  }
 }

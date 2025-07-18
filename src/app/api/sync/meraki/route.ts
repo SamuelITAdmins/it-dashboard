@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { calculateUptimes, fetchDeviceHistories, fetchDevices, getOrgId } from "@/lib/meraki";
+import { calculateUptimes, fetchDeviceHistories, fetchDevices, getOrgId, mapMerakiDeviceToDb } from "@/lib/meraki";
 
 export async function POST() {
   try {
@@ -7,20 +7,30 @@ export async function POST() {
     const orgId = await getOrgId();
 
     console.log('Fetching devices...');
-    let devices = await fetchDevices(orgId);
+    let merakiDevices = await fetchDevices(orgId);
 
     console.log('Fetching device histories...');
-    devices = await fetchDeviceHistories(orgId, devices);
+    merakiDevices = await fetchDeviceHistories(orgId, merakiDevices);
 
     console.log('Calculating device uptime...');
-    calculateUptimes(devices);
+    calculateUptimes(merakiDevices);
+
+    for (const merakiDevice of merakiDevices) {
+      const networkDeviceData = mapMerakiDeviceToDb(merakiDevice)
+
+      await prisma.networkDevices.upsert({
+        where: { merakiDeviceId: networkDeviceData.merakiDeviceId },
+        update: networkDeviceData,
+        create: networkDeviceData
+      })
+    }
 
     return Response.json({
       success: true,
-      message: devices
+      message: `Synced ${merakiDevices.length} devices`
     });
   } catch (error) {
-    console.error(`Azure sync error:`, error);
+    console.error(`Meraki sync error:`, error);
     return Response.json(
       { error: 'Sync failed' },
       { status: 500 }
