@@ -1,4 +1,4 @@
-import { apiRequest } from "@cisco-meraki/dashboard-api-tools";
+import { apiRequest, isApiError } from "@cisco-meraki/dashboard-api-tools";
 
 interface Device {
   name: string
@@ -15,6 +15,17 @@ interface Device {
 interface Organization {
   name: string
   id: string
+}
+
+interface DeviceStatuses {
+  counts: {
+    byStatus: {
+      online: number
+      alerting: number
+      offline: number
+      dormant: number
+    }
+  }
 }
 
 interface ChangeHistory {
@@ -59,9 +70,46 @@ export async function getOrgId(): Promise<string> {
     } else {
       throw new Error("No organizations found");
     }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to get organization ID: ${errorMessage}`);
+  } catch (badResponse) {
+    if (isApiError(badResponse)) {
+      throw new Error(`Failed to get organization ID. ${badResponse.statusCode}: ${badResponse.statusText}`)
+    } else {
+      console.log(badResponse)
+      throw new Error('An unexpected error occurred while fetching organization ID.')
+    }
+  }
+}
+
+export async function fetchDeviceStatuses(orgId: string, networkIds?: string[]): Promise<DeviceStatuses> {
+  const deviceTypes = ['switch', 'wireless', 'sensor'];
+  const productTypesQuery = deviceTypes.map(type => `productTypes[]=${type}`).join('&');
+  console.log(productTypesQuery)
+  const fullQuery = networkIds ? productTypesQuery.concat(networkIds.map(id => `networkIds[]=${id}`).join('&')) : productTypesQuery;
+
+  try {
+    const response = await apiRequest<DeviceStatuses> (
+      "GET",
+      `https://api.meraki.com/api/v1/organizations/${orgId}/devices/statuses/overview?${fullQuery}`,
+      undefined,
+      {
+        auth: {
+          apiKey: process.env.MERAKI_API_KEY
+        }
+      }
+    );
+
+    if (response.ok && response.data) {
+      return response.data
+    } else {
+      throw new Error('No device statuses found.')
+    }
+  } catch (badResponse) {
+    if (isApiError(badResponse)) {
+      throw new Error(`Failed to get device statuses. ${badResponse.statusCode}: ${badResponse.statusText}`)
+    } else {
+      console.log(badResponse)
+      throw new Error('An unexpected error occurred while fetching device statuses.')
+    }
   }
 }
 
@@ -86,9 +134,13 @@ export async function fetchDevices(orgId: string): Promise<Device[]> {
     } else {
       throw new Error("No devices found");
     }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to get devices availabilities: ${errorMessage}`);
+  } catch (badResponse) {
+    if (isApiError(badResponse)) {
+      throw new Error(`Failed to get devices. ${badResponse.statusCode}: ${badResponse.statusText}`)
+    } else {
+      console.log(badResponse)
+      throw new Error('An unexpected error occurred while fetching devices.')
+    }
   }
 }
 
@@ -120,9 +172,13 @@ export async function fetchDeviceHistories(orgId: string, devices: Device[], rep
     } else {
       throw new Error(`Unknown device history error.`);
     }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to get devices histories: ${errorMessage}`);
+  } catch (badResponse) {
+    if (isApiError(badResponse)) {
+      throw new Error(`Failed to get device histories. ${badResponse.statusCode}: ${badResponse.statusText}`)
+    } else {
+      console.log(badResponse)
+      throw new Error('An unexpected error occurred while fetching device histories.')
+    }
   }
 }
 
@@ -173,6 +229,6 @@ export function mapMerakiDeviceToDb(device: Device) {
     name: device.name,
     productType: device.productType,
     status: device.status,
-    uptimePercentage: device.uptimePercentage
+    uptimePercentage: device.uptimePercentage ?? 0
   }
 }

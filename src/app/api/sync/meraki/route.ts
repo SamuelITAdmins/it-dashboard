@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { calculateUptimes, fetchDeviceHistories, fetchDevices, getOrgId, mapMerakiDeviceToDb } from "@/lib/meraki";
+import { calculateUptimes, fetchDeviceHistories, fetchDevices, fetchDeviceStatuses, getOrgId, mapMerakiDeviceToDb } from "@/lib/meraki";
 
 export async function POST() {
   try {
@@ -22,7 +22,7 @@ export async function POST() {
         where: { merakiDeviceId: networkDeviceData.merakiDeviceId },
         update: networkDeviceData,
         create: networkDeviceData
-      })
+      });
     }
 
     return Response.json({
