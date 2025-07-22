@@ -17,19 +17,15 @@ model Users {
   jobTitle            String?               @map("job_title")
   department          String?
   companyName         String?               @map("company_name")
-  officeLocation      String?               @map("office_location")
   city                String?
-  state               String?
-  country             String?
-  usageLocation       String?               @map("usage_location")
   azureCreatedAt      DateTime?             @map("azure_created_at")
   
   // Db tracking
   lastUpdatedAt       DateTime              @updatedAt @map("last_updated_at")
 
   // Relations
-  locationId          Int?                  @map("location_id")
-  location            Locations?            @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  locationId          Int                   @map("location_id")
+  location            Locations             @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   dataCollectionRuns  DataCollectionRuns[]
   requestedTickets    Tickets[]             @relation("TicketRequester")
   assignedTickets     Tickets[]             @relation("TicketAssignee")
@@ -39,7 +35,7 @@ model Locations {
   id                  Int                   @id @default(autoincrement())
 
   // Location data
-  name                String
+  name                String                @unique
   state               String
   timezone            String
 
