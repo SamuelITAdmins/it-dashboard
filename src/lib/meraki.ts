@@ -10,6 +10,8 @@ interface Device {
   status: string
   updateHistory?: ChangeHistory[]
   uptimePercentage?: number
+  tempReading?: number
+  humidityReading?: number
 }
 
 interface Organization {
@@ -44,6 +46,21 @@ interface ChangeHistory {
   network: {
     name: string
   }
+}
+
+interface SensorReading {
+  serial: string
+  readings: Array<{
+    metric: string  // "temperature", "humidity", etc.
+    ts: string
+    temperature?: {
+      fahrenheit: number
+      celsius: number
+    };
+    humidity?: {
+      relativePercentage: number
+    };
+  }>;
 }
 
 // const ORGANIZATION_URL = `/organizations/${organizationId}`
@@ -163,12 +180,23 @@ export async function fetchDeviceHistories(orgId: string, devices: Device[], rep
 
     if (response.ok) {
       const fullHistory = response.data.reverse(); // put in chronological order
-
-      devices.forEach((device: Device) => {
-        device.updateHistory = fullHistory.filter(record => record.device.serial === device.serial);
+      
+      // Create a Map for efficient lookups
+      const historyBySerial = new Map<string, ChangeHistory[]>();
+      
+      fullHistory.forEach(record => {
+        const serial = record.device.serial;
+        if (!historyBySerial.has(serial)) {
+          historyBySerial.set(serial, []);
+        }
+        historyBySerial.get(serial)!.push(record);
       });
 
-      return devices;
+      // Return new array with updateHistory added
+      return devices.map(device => ({
+        ...device,
+        updateHistory: historyBySerial.get(device.serial) || []
+      }));
     } else {
       throw new Error(`Unknown device history error.`);
     }
@@ -178,6 +206,54 @@ export async function fetchDeviceHistories(orgId: string, devices: Device[], rep
     } else {
       console.log(badResponse)
       throw new Error('An unexpected error occurred while fetching device histories.')
+    }
+  }
+}
+
+export async function fetchLatestSensorReadings(orgId: string, devices: Device[]): Promise<Device[]> {
+  try {
+    const response = await apiRequest<SensorReading[]> (
+      "GET",
+      `https://api.meraki.com/api/v1/organizations/${orgId}/sensor/readings/latest`,
+      undefined,
+      {
+        auth: {
+          apiKey: process.env.MERAKI_API_KEY
+        }
+      }
+    );
+
+    if (response.ok) {
+      // create a Map for O(1) lookups
+      const sensorDataMap = new Map(
+        response.data.map(reading => {
+          const tempReading = reading.readings.find(r => r.metric === 'temperature');
+          const humidityReading = reading.readings.find(r => r.metric === 'humidity');
+          return [
+            reading.serial, 
+            {
+              temperature: tempReading?.temperature?.fahrenheit, 
+              humidity: humidityReading?.humidity?.relativePercentage
+            }
+          ];
+        })
+      );
+
+      // Return new array instead of mutating input
+      return devices.map(device => ({
+        ...device,
+        tempReading: sensorDataMap.get(device.serial)?.temperature ?? device.tempReading,
+        humidityReading: sensorDataMap.get(device.serial)?.humidity ?? device.humidityReading
+      }));
+    } else {
+      throw new Error('Unknown latest sensor readings error.')
+    }
+  } catch (badResponse) {
+    if (isApiError(badResponse)) {
+      throw new Error(`Failed to get sensor readings. ${badResponse.statusCode}: ${badResponse.statusText}`);
+    } else {
+      console.log(badResponse);
+      throw new Error('An unexpected error occured while fetching sensor readings.');
     }
   }
 }
@@ -208,7 +284,7 @@ export function calculateUptimes(devices: Device[], reportLength?: number) {
         uptimeMS += changeTime.getTime() - startTime.getTime();
       }
 
-      // update times and statuses
+      // update start time and status
       startTime = changeTime;
       startStatus = entry.details.new[0].value;
     });
@@ -229,6 +305,8 @@ export function mapMerakiDeviceToDb(device: Device) {
     name: device.name,
     productType: device.productType,
     status: device.status,
-    uptimePercentage: device.uptimePercentage ?? 0
+    uptimePercentage: device.uptimePercentage ?? 0,
+    sensorTemperature: device.tempReading,
+    sensorHumidity: device.humidityReading
   }
 }

@@ -96,6 +96,8 @@ model NetworkDevices {
   productType         String                @map("product_type")
   status              String                
   uptimePercentage    Decimal               @map("uptime_percentage")
+  sensorTemperature   Decimal?              @map("sensor_temp")
+  sensorHumidity      Decimal?              @map("sensor_humidity")
 
   // Relations
   locationId          Int?                  @map("location_id")

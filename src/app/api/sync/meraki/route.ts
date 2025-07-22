@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { calculateUptimes, fetchDeviceHistories, fetchDevices, fetchDeviceStatuses, getOrgId, mapMerakiDeviceToDb } from "@/lib/meraki";
+import { calculateUptimes, fetchDeviceHistories, fetchDevices, fetchDeviceStatuses, fetchLatestSensorReadings, getOrgId, mapMerakiDeviceToDb } from "@/lib/meraki";
 
 export async function POST() {
   try {
@@ -11,6 +11,9 @@ export async function POST() {
 
     console.log('Fetching device histories...');
     merakiDevices = await fetchDeviceHistories(orgId, merakiDevices);
+
+    console.log('Fetching sensor readings...')
+    merakiDevices = await fetchLatestSensorReadings(orgId, merakiDevices);
 
     console.log('Calculating device uptime...');
     calculateUptimes(merakiDevices);
