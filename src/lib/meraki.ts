@@ -63,11 +63,6 @@ interface SensorReading {
   }>;
 }
 
-// const ORGANIZATION_URL = `/organizations/${organizationId}`
-// const NETWORK_URL = `/networks/${networkId}`
-// const DEVICE_STATUSES_URL = `/organizations/${organizationId}/devices/statuses/overview`
-// const DEVICE_HISTORY_URL = `/organizations/${organizationId}/devices/availabilities/changeHistory`
-
 export async function getOrgId(): Promise<string> {
   try {
     const response = await apiRequest<Organization[]> (

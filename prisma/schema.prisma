@@ -17,7 +17,11 @@ model Users {
   jobTitle            String?               @map("job_title")
   department          String?
   companyName         String?               @map("company_name")
+  officeLocation      String?               @map("office_location")
   city                String?
+  state               String?
+  country             String?
+  usageLocation       String?               @map("usage_location")
   azureCreatedAt      DateTime?             @map("azure_created_at")
   
   // Db tracking
@@ -33,9 +37,13 @@ model Users {
 
 model Locations {
   id                  Int                   @id @default(autoincrement())
+
+  // Location data
   name                String
   state               String
   timezone            String
+
+  // Relations
   users               Users[]
   assets              Assets[]
   networkDevices      NetworkDevices[]

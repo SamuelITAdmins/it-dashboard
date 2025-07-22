@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { fetchAzureUsers, mapAzureUserToDb } from "@/lib/azure";
+import { fetchAzureLocations, fetchAzureUsers, mapAzureUserToDb } from "@/lib/azure";
 
 export async function POST() {
   try {
@@ -15,6 +15,8 @@ export async function POST() {
         create: userData
       });
     }
+
+    await fetchAzureLocations();
 
     return Response.json({
       success: true,
