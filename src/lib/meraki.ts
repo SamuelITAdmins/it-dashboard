@@ -295,13 +295,18 @@ export function calculateUptimes(devices: Device[], reportLength?: number) {
 }
 
 export function mapMerakiDeviceToDb(device: Device) {
-  return {
-    merakiDeviceId: device.serial,
-    name: device.name,
-    productType: device.productType,
-    status: device.status,
-    uptimePercentage: device.uptimePercentage ?? 0,
-    sensorTemperature: device.tempReading,
-    sensorHumidity: device.humidityReading
+  try {
+    return {
+      merakiDeviceId: device.serial,
+      name: device.name,
+      productType: device.productType,
+      status: device.status,
+      uptimePercentage: device.uptimePercentage ?? 0,
+      sensorTemperature: device.tempReading,
+      sensorHumidity: device.humidityReading
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown Error'
+    throw new Error(`Device mapping failed for ${device.name}: ${errorMessage}`)
   }
 }

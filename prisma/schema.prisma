@@ -17,7 +17,6 @@ model Users {
   jobTitle            String?               @map("job_title")
   department          String?
   companyName         String?               @map("company_name")
-  city                String?
   azureCreatedAt      DateTime?             @map("azure_created_at")
   
   // Db tracking

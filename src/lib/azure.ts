@@ -36,7 +36,7 @@ interface TokenResponse {
   expires_in: number
 }
 
-// Token management
+// Access Token
 export async function getAccessToken(companyPrefix: string): Promise<string> {
   const config = getAzureConfig(companyPrefix);
   const tokenUrl = `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`;
@@ -98,8 +98,7 @@ export async function fetchAzureUsers(token: string, companyName: string): Promi
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Graph API error:', response.status, errorText);
-      throw new Error(`Graph API error: ${response.status} - ${errorText}`);
+      throw new Error(`Azure User API error: ${response.status} - ${errorText}`);
     }
     
     const data: AzureUsersResponse = await response.json();
@@ -119,8 +118,7 @@ export async function fetchAzureUsers(token: string, companyName: string): Promi
   return filteredUsers;
 }
 
-// Data transformation - matches your schema exactly
-export function mapAzureUserToDb(azureUser: AzureUser) {
+export function mapAzureUserToDb(azureUser: AzureUser, locationId: number) {
   try {
     return {
       azureId: azureUser.id,
@@ -129,10 +127,10 @@ export function mapAzureUserToDb(azureUser: AzureUser) {
       jobTitle: azureUser.jobTitle || null,
       department: azureUser.department || null,
       companyName: azureUser.companyName || null,
-      city: azureUser.city || null,  // Keep city in user per your schema
       azureCreatedAt: azureUser.createdDateTime && azureUser.createdDateTime !== 'None' 
         ? new Date(azureUser.createdDateTime) 
         : null,
+      locationId: locationId
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -140,16 +138,15 @@ export function mapAzureUserToDb(azureUser: AzureUser) {
   }
 }
 
-export function createLocationsFromUsers(users: AzureUser[]): { locations: AzureLocation[], errors: string[] } {
+export function createLocationsFromUsers(users: AzureUser[]): AzureLocation[] {
   const uniqueLocations = new Map<string, AzureLocation>();
-  const errors: string[] = [];
 
   users.forEach((user: AzureUser) => {
     try {
       if (!user.city) return;
       
       const city = user.city.trim();
-      if (city === 'None' || uniqueLocations.has(city)) return;
+      if (uniqueLocations.has(city)) return;
 
       let cityState = city;
       if (user.state && user.state.length === 2) {
@@ -165,22 +162,15 @@ export function createLocationsFromUsers(users: AzureUser[]): { locations: Azure
           timezone: locationInfo.timezone
         });
       } else {
-        const error = `Could not find location info for: ${city}`;
-        console.warn(error);
-        errors.push(error);
+        throw new Error(`Could not find location info for: ${city}`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const errorMsg = `Failed to process location for user ${user.displayName}: ${errorMessage}`;
-      console.error(errorMsg);
-      errors.push(errorMsg);
+      throw new Error(`Failed to process location for user ${user.displayName}: ${errorMessage}`);
     }
   });
 
-  return {
-    locations: Array.from(uniqueLocations.values()),
-    errors
-  };
+  return Array.from(uniqueLocations.values())
 }
 
 function getLocationInfo(cityState: string): { state: string, timezone: string } {
@@ -206,4 +196,31 @@ function getLocationInfoFallback(cityState: string): { state: string; timezone: 
   };
   
   return cityMappings[cityState] || { state: '', timezone: 'America/Denver' };
+}
+
+export function mapAzureLocationToDb(location: AzureLocation) {
+  try {
+    return {
+      name: location.name,
+      state: location.state,
+      timezone: location.timezone
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown Error'
+    throw new Error(`Locaiton mapping failed for ${location.name}: ${errorMessage}`)
+  }
+}
+
+export function resolveUserLocationId(
+  user: AzureUser, 
+  locationMap: Map<string, number>
+): number {
+  // get location id that matches user's city
+  const locationId = user.city? locationMap.get(user.city) : null;
+
+  if (!locationId) {
+    throw new Error(`Locaiton ID of ${user.city} could not be retrieved for ${user.displayName}`);
+  }
+  
+  return locationId;
 }

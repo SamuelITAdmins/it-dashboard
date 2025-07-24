@@ -247,22 +247,27 @@ export async function resolveTicketUserIds(
 }
 
 export function mapFSTicketToDb(fsTicket: FSTicket, userIds: { requesterId: number, responderId: number | null }) {
-  return {
-    fsTicketId: fsTicket.stats.ticket_id.toString(),
-    subject: fsTicket.subject,
-    category: fsTicket.category || null,
-    description: fsTicket.description_text || null,
-    status: convertStatus(fsTicket.status),
-    priority: convertPriority(fsTicket.priority),
-    source: convertSource(fsTicket.source),
-    departmentId: fsTicket.department_id.toString(),
-    workspaceId: fsTicket.workspace_id,
-    createdAt: new Date(fsTicket.created_at),
-    assignedAt: fsTicket.stats.first_assigned_at ? new Date(fsTicket.stats.first_assigned_at) : null,
-    resolvedAt: fsTicket.stats.resolved_at ? new Date(fsTicket.stats.resolved_at) : null,
-    firstResponseTime: fsTicket.stats.first_resp_time_in_secs || null,
-    resolutionTime: fsTicket.stats.resolution_time_in_secs || null, 
-    requesterId: userIds.requesterId,
-    assigneeId: userIds.responderId
-  };
+  try {
+    return {
+      fsTicketId: fsTicket.stats.ticket_id.toString(),
+      subject: fsTicket.subject,
+      category: fsTicket.category || null,
+      description: fsTicket.description_text || null,
+      status: convertStatus(fsTicket.status),
+      priority: convertPriority(fsTicket.priority),
+      source: convertSource(fsTicket.source),
+      departmentId: fsTicket.department_id.toString(),
+      workspaceId: fsTicket.workspace_id,
+      createdAt: new Date(fsTicket.created_at),
+      assignedAt: fsTicket.stats.first_assigned_at ? new Date(fsTicket.stats.first_assigned_at) : null,
+      resolvedAt: fsTicket.stats.resolved_at ? new Date(fsTicket.stats.resolved_at) : null,
+      firstResponseTime: fsTicket.stats.first_resp_time_in_secs || null,
+      resolutionTime: fsTicket.stats.resolution_time_in_secs || null, 
+      requesterId: userIds.requesterId,
+      assigneeId: userIds.responderId
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown Error'
+    throw new Error(`Ticket mapping failed for ${fsTicket.subject}: ${errorMessage}`)
+  }
 }

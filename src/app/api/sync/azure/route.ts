@@ -1,71 +1,77 @@
 import { prisma } from "@/lib/prisma";
 import { 
+  createLocationsFromUsers,
   fetchAzureUsers, 
   getAccessToken, 
+  mapAzureLocationToDb, 
   mapAzureUserToDb,
-  type AzureUser 
+  resolveUserLocationId
 } from "@/lib/azure";
 
 export async function POST() {
   try {
-    console.log('Starting Azure user sync...');
+    console.log('Starting Azure user and location sync...');
     
+    // get access tokens for both SE and EPC tenants
     const [seToken, epcToken] = await Promise.all([
       getAccessToken('SE'),
       getAccessToken('EPC')
     ]);
 
+    // get user data from azure
     const [seAzureUsers, epcAzureUsers] = await Promise.all([
       fetchAzureUsers(seToken, 'Samuel Engineering'),
       fetchAzureUsers(epcToken, 'Samuel EPC')
     ]);
 
     const allAzureUsers = [...seAzureUsers, ...epcAzureUsers];
-    const locationMap = await createLocationIdMap();
-    
-    console.log(`Syncing ${allAzureUsers.length} users...`);
-    
-    const results = await Promise.allSettled(
-      allAzureUsers.map(async (azureUser) => {
-        const userData = mapAzureUserToDb(azureUser);
-        const locationId = azureUser.city ? locationMap.get(azureUser.city) : null;
-        
-        // Skip users without location since locationId is required
-        if (!locationId) {
-          throw new Error(`Required location not found for user ${userData.name}, city: ${azureUser.city}`);
-        }
-        
-        return prisma.users.upsert({  // Use plural 'users' per your schema
-          where: { azureId: userData.azureId },
-          update: {
-            ...userData,
-            locationId  // Required field per your schema
-          },
-          create: {
-            ...userData,
-            locationId  // Required field per your schema
-          }
+
+    // grab location data from user.city
+    const azureLocations = createLocationsFromUsers(allAzureUsers);
+
+    // add locations to the db
+    for (const location of azureLocations) {
+      try {
+        const locationData = mapAzureLocationToDb(location);
+
+        await prisma.locations.upsert({
+          where: { name: locationData.name },
+          update: locationData,
+          create: locationData
         });
-      })
-    );
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`Skipping Azure location ${location.name}:`, errorMessage);
+      }
+    }
 
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
-    const errors = results
-      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-      .map(r => r.reason.message);
+    // map location ids and names to be added to user data
+    const locations = await prisma.locations.findMany({
+      select: { id: true, name: true }
+    });
+    const locationMap = new Map(locations.map(loc => [loc.name, loc.id]));
 
-    console.log(`✅ User sync completed: ${successful} successful, ${failed} failed`);
+    // add users to the db
+    for (const user of allAzureUsers) {
+      try {
+        const locationId = await resolveUserLocationId(user, locationMap);
+
+        const userData = mapAzureUserToDb(user, locationId)
+
+        await prisma.users.upsert({
+          where: { azureId: userData.azureId },
+          update: userData,
+          create: userData
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`Skipping Azure user ${user.displayName}:`, errorMessage);
+      }
+    }
 
     return Response.json({
-      success: failed === 0,
-      message: `User sync completed: ${successful} successful, ${failed} failed`,
-      details: {
-        total: allAzureUsers.length,
-        successful,
-        failed,
-        errors
-      }
+      success: true,
+      message: `Synced ${allAzureUsers.length} users and ${azureLocations.length} locations.`
     });
 
   } catch (error) {
@@ -74,17 +80,5 @@ export async function POST() {
       { error: 'User sync failed', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
-  }
-}
-
-async function createLocationIdMap(): Promise<Map<string, number>> {
-  try {
-    const locations = await prisma.locations.findMany({  // Use plural 'locations'
-      select: { id: true, name: true }
-    });
-    return new Map(locations.map(loc => [loc.name, loc.id]));
-  } catch (error) {
-    console.warn('Failed to load location mapping:', error);
-    return new Map();
   }
 }
