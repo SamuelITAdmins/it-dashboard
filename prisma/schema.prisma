@@ -82,12 +82,20 @@ model Metrics {
 
 model Assets {
   id                  Int                   @id @default(autoincrement())
+  fsAssetId           String                @unique @map("fs_asset_id")
+
+  // FreshService data
   assetType           String                @map("asset_type")
   assetName           String                @map("asset_name")
-  serialNum           String                @map("serial_num")
-  status              String
+  assetTag            String                @map("asset_tag")
+
+  // Relations
   locationId          Int                   @map("location_id")
-  location            Locations             @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  location            Locations             @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  userId              Int
+  user                Users                 @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  lenderId            Int
+  lender              Users                 @relation(fields: [lenderid], references: [id], onDelete: SetNull, onUpdate: Cascade)
 }
 
 model NetworkDevices {
@@ -111,7 +119,7 @@ model Tickets {
   id                  Int                   @id @default(autoincrement())
   fsTicketId          String                @unique @map("fs_ticket_id")
 
-  // FreshSerice data
+  // FreshService data
   subject             String
   category            String?
   description         String?
