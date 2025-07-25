@@ -6,7 +6,7 @@ interface AzureConfig {
   clientSecret: string
 }
 
-export interface AzureUser {
+interface AzureUser {
   id: string
   displayName: string
   userPrincipalName?: string
@@ -19,7 +19,7 @@ export interface AzureUser {
   createdDateTime?: string
 }
 
-export interface AzureLocation {
+interface AzureLocation {
   name: string
   state: string
   timezone: string
