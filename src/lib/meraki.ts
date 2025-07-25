@@ -77,7 +77,6 @@ export async function getOrgId(): Promise<string> {
     );
     
     if (response.ok && response.data.length > 0) {
-      console.log(response.data[0].id);
       return response.data[0].id;
     } else {
       throw new Error("No organizations found");
