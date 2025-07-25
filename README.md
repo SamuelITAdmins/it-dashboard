@@ -48,7 +48,7 @@ brew install postgresql
 # Start PostgreSQL service
 brew services start postgresql
 
-# Initialize database if needed
+# Initialize database if needed (for Apple Silicon Macs)
 initdb /opt/homebrew/var/postgres
 ```
 
@@ -95,7 +95,13 @@ psql postgres
 psql postgres
 
 # Create the database (inside psql)
-CREATE DATABASE "it-dashboard";
+CREATE DATABASE "itdashboard";
+
+# Create user
+CREATE USER username WITH PASSWORD 'password';
+
+# Grant user privileges
+GRANT ALL PRIVILEGES ON DATABASE itdashboard TO username;
 
 # Exit psql
 \q
@@ -107,7 +113,7 @@ CREATE DATABASE "it-dashboard";
 psql -l
 
 # Connect to your new database
-psql it-dashboard
+psql itdashboard
 ```
 
 ## Step 5: Environment Configuration
@@ -115,9 +121,7 @@ psql it-dashboard
 Create a `.env` file in the project root:
 
 ```env
-DATABASE_URL=postgresql://localhost:5432/it-dashboard
-# Or with credentials:
-# DATABASE_URL=postgresql://username:password@localhost:5432/it-dashboard
+DATABASE_URL=postgresql://username:password@localhost:5432/itdashboard
 ```
 
 ## Step 6: Prisma Setup
@@ -145,14 +149,15 @@ The application should now be running at `http://localhost:3000`
 
 ```bash
 # Prisma operations
-npx prisma studio              # Open Prisma Studio (database GUI)
+npx prisma studio             # Open Prisma Studio (database GUI)
 npx prisma db push            # Push schema changes to database  
 npx prisma generate           # Regenerate Prisma client
 npx prisma migrate dev        # Create and apply new migration
 
-psql it-dashboard              # Connect to database
+psql itdashboard              # Connect to database
 psql -l                       # List all databases
 \dt                           # List tables (inside psql)
+\du                           # List users
 \q                            # Exit psql
 
 # Development
@@ -175,9 +180,8 @@ net stop postgresql-x64-14
 ## Next Steps
 
 - Familiarize yourself with the project structure
-- Review the API endpoints in `/pages/api/`
+- Review the API endpoints in `/api/sync/`
 - Check the database schema in `/prisma/schema.prisma`
-- Read the component documentation in `/components/`
 
 ## Getting Help
 
