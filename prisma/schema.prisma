@@ -28,6 +28,8 @@ model Users {
   dataCollectionRuns  DataCollectionRuns[]
   requestedTickets    Tickets[]             @relation("TicketRequester")
   assignedTickets     Tickets[]             @relation("TicketAssignee")
+  usingAssets         Assets[]              @relation("AssetUser")
+  lendingAssets       Assets[]              @relation("AssetLender")
 }
 
 model Locations {
@@ -93,9 +95,9 @@ model Assets {
   locationId          Int                   @map("location_id")
   location            Locations             @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   userId              Int
-  user                Users                 @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user                Users                 @relation("AssetUser", fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   lenderId            Int
-  lender              Users                 @relation(fields: [lenderid], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  lender              Users                 @relation("AssetLender", fields: [lenderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 }
 
 model NetworkDevices {
