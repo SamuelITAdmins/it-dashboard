@@ -189,10 +189,11 @@ function getLocationInfo(cityState: string): { state: string, timezone: string }
 
 function getLocationInfoFallback(cityState: string): { state: string; timezone: string } {
   const cityMappings: Record<string, { state: string; timezone: string }> = {
-    'Greenwood Village CO': { state: 'CO', timezone: 'America/Denver' },
+    'Greenwood Village CO': { state: 'CO', timezone: 'America/Denver' }, // city-timezones does not contain Greenwood Village
     'Abilene TX': { state: 'TX', timezone: 'America/Chicago' },
     'Tyler TX': { state: 'TX', timezone: 'America/Chicago' },
-    'Rock Springs WY': { state: 'WY', timezone: 'America/Denver' }
+    'Rock Springs WY': { state: 'WY', timezone: 'America/Denver' }, // city-timezones does not contain Rock Springs
+    'Denver Tech Center CO': { state: 'CO', timezone: 'America/Denver' }
   };
   
   return cityMappings[cityState] || { state: '', timezone: 'America/Denver' };
@@ -207,7 +208,7 @@ export function mapAzureLocationToDb(location: AzureLocation) {
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown Error'
-    throw new Error(`Locaiton mapping failed for ${location.name}: ${errorMessage}`)
+    throw new Error(`Location mapping failed for ${location.name}: ${errorMessage}`)
   }
 }
 
@@ -219,7 +220,7 @@ export function resolveUserLocationId(
   const locationId = user.city? locationMap.get(user.city) : null;
 
   if (!locationId) {
-    throw new Error(`Locaiton ID of ${user.city} could not be retrieved for ${user.displayName}`);
+    throw new Error(`Location ID of ${user.city} could not be retrieved for ${user.displayName}`);
   }
   
   return locationId;
