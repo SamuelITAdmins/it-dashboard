@@ -193,7 +193,7 @@ function getLocationInfoFallback(cityState: string): { state: string; timezone: 
     'Abilene TX': { state: 'TX', timezone: 'America/Chicago' },
     'Tyler TX': { state: 'TX', timezone: 'America/Chicago' },
     'Rock Springs WY': { state: 'WY', timezone: 'America/Denver' }, // city-timezones does not contain Rock Springs
-    'Denver Tech Center CO': { state: 'CO', timezone: 'America/Denver' }
+    'Denver Tech Center CO': { state: 'CO', timezone: 'America/Denver' } // city-timezones does not contain Denver Tech Center
   };
   
   return cityMappings[cityState] || { state: '', timezone: 'America/Denver' };

@@ -29,12 +29,26 @@ interface FSAgent {
   email: string
 }
 
+interface FSAsset {
+  id: number
+  name: string
+  asset_type_id: number
+  asset_tag: string
+  user_id: number
+  location_id: number
+  agent_id: number
+}
+
 interface FSTicketsResponse {
   tickets: FSTicket[]
 }
 
 interface FSAgentsResponse {
   agents: FSAgent[]
+}
+
+interface FSAssetsResponse {
+  assets: FSAsset[]
 }
 
 const STATUS_MESSAGES: Record<number, string> = {
@@ -103,8 +117,6 @@ function getReqVars(): { headers: Headers, domain: string } {
 }
 
 export async function fetchFSTickets(): Promise<FSTicket[]> {
-  console.log("Starting Fresh Service ticket fetch...");
-
   const { headers, domain } = getReqVars();
 
   const allTickets: FSTicket[] = [];
@@ -121,8 +133,6 @@ export async function fetchFSTickets(): Promise<FSTicket[]> {
     const url = `https://${domain}/api/v2/tickets?per_page=100&page=${page}&include=requester,stats&updated_since=${updatedSince}`;
 
     try {
-      console.log(`Fetching page ${page}...`);
-
       // make fetch request
       const response = await fetch(url, {
         method: 'GET',
@@ -131,22 +141,18 @@ export async function fetchFSTickets(): Promise<FSTicket[]> {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Graph API error:', response.status, errorText);
-        throw new Error(`Graph API error: ${response.status} - ${errorText}`);
+        console.error('FreshService error:', response.status, errorText);
+        throw new Error(`FreshService error: ${response.status} - ${errorText}`);
       }
 
       const data: FSTicketsResponse = await response.json();
 
       if (!data?.tickets || data.tickets.length === 0) {
-        console.log("No more tickets found, ending pagination");
         break;
       }
 
       allTickets.push(...data.tickets);
-      console.log(`Added ${data.tickets.length} tickets from page ${page}`);
-
       page++;
-
     } catch (error) {
       console.error('Error fetching data:', error);
       throw error;
@@ -157,9 +163,8 @@ export async function fetchFSTickets(): Promise<FSTicket[]> {
   return allTickets;
 }
 
+// TODO: Change so that only IT Support agents are retrieved (11 people)
 export async function fetchFSAgents(): Promise<FSAgent[]> {
-  console.log("Starting Fresh Service agent fetch...");
-
   const { headers, domain } = getReqVars();
 
   const allAgents: FSAgent[] = [];
@@ -169,8 +174,6 @@ export async function fetchFSAgents(): Promise<FSAgent[]> {
     const url = `https://${domain}/api/v2/agents?per_page=100&page=${page}&active=true`;
 
     try {
-      console.log(`Fetching page ${page}...`);
-
       // make fetch request
       const response = await fetch(url, {
         method: 'GET',
@@ -179,22 +182,18 @@ export async function fetchFSAgents(): Promise<FSAgent[]> {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Graph API error:', response.status, errorText);
-        throw new Error(`Graph API error: ${response.status} - ${errorText}`);
+        console.error('FreshService error:', response.status, errorText);
+        throw new Error(`FreshService error: ${response.status} - ${errorText}`);
       }
 
       const data: FSAgentsResponse = await response.json();
 
       if (!data?.agents || data.agents.length === 0) {
-        console.log("No more agents found, ending pagination");
         break;
       }
 
       allAgents.push(...data.agents);
-      console.log(`Added ${data.agents.length} agents from page ${page}`);
-
       page++;
-
     } catch (error) {
       console.error('Error fetching data:', error);
       throw error;
@@ -203,6 +202,46 @@ export async function fetchFSAgents(): Promise<FSAgent[]> {
 
   console.log(`Fetch complete. Total agents retrieved: ${allAgents.length}`);
   return allAgents;
+}
+
+export async function fetchFSAssets(): Promise<FSAsset[]> {
+  const { headers, domain } = getReqVars();
+
+  const allAssets: FSAsset[] = [];
+  let page = 1;
+
+  while (true) {
+    const url = `https://${domain}/api/v2/assets?per_page=100&page=${page}`;
+
+    try {
+      // make fetch request
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('FreshService error:', response.status, errorText);
+        throw new Error(`FreshService error: ${response.status} - ${errorText}`);
+      }
+
+      const data: FSAssetsResponse = await response.json();
+
+      if (!data?.assets || data.assets.length === 0) {
+        break;
+      }
+
+      allAssets.push(...data.assets);
+      page++;
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      throw error;
+    }
+  }
+
+  console.log(`Fetch complete. Total assets retrieved: ${allAssets.length}`);
+  return allAssets;
 }
 
 export function createAgentEmailMap(fsAgents: FSAgent[]): Map<string, string> {
@@ -267,7 +306,24 @@ export function mapFSTicketToDb(fsTicket: FSTicket, userIds: { requesterId: numb
       assigneeId: userIds.responderId
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown Error'
-    throw new Error(`Ticket mapping failed for ${fsTicket.subject}: ${errorMessage}`)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown Error';
+    throw new Error(`Ticket mapping failed for ${fsTicket.subject}: ${errorMessage}`);
+  }
+}
+
+export function mapFSAssetToDb(fsAsset: FSAsset) {
+  try {
+    return {
+      fsAssetId: fsAsset.id.toString(),
+      assetName: fsAsset.name,
+      assetType: fsAsset.asset_type_id.toString(),
+      assetTag: fsAsset.asset_tag || null,
+      locationId: fsAsset.location_id ? fsAsset.location_id.toString() : null,
+      userId: fsAsset.user_id ? fsAsset.user_id.toString() : null,
+      lenderId: fsAsset.agent_id ? fsAsset.agent_id.toString() : null
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown Error';
+    throw new Error(`Asset mapping failed for ${fsAsset.name}: ${errorMessage}`);
   }
 }

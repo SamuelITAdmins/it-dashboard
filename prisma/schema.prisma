@@ -28,8 +28,8 @@ model Users {
   dataCollectionRuns  DataCollectionRuns[]
   requestedTickets    Tickets[]             @relation("TicketRequester")
   assignedTickets     Tickets[]             @relation("TicketAssignee")
-  usingAssets         Assets[]              @relation("AssetUser")
-  lendingAssets       Assets[]              @relation("AssetLender")
+  // usingAssets         Assets[]              @relation("AssetUser")
+  // lendingAssets       Assets[]              @relation("AssetLender")
 }
 
 model Locations {
@@ -42,7 +42,7 @@ model Locations {
 
   // Relations
   users               Users[]
-  assets              Assets[]
+  // assets              Assets[]
   networkDevices      NetworkDevices[]
   tickets             Tickets[]
   metrics             Metrics[]
@@ -87,17 +87,17 @@ model Assets {
   fsAssetId           String                @unique @map("fs_asset_id")
 
   // FreshService data
-  assetType           String                @map("asset_type")
   assetName           String                @map("asset_name")
-  assetTag            String                @map("asset_tag")
+  assetType           String                @map("asset_type")
+  assetTag            String?               @map("asset_tag")
 
   // Relations
-  locationId          Int                   @map("location_id")
-  location            Locations             @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  userId              Int
-  user                Users                 @relation("AssetUser", fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  lenderId            Int
-  lender              Users                 @relation("AssetLender", fields: [lenderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  locationId          String?               @map("location_id")
+  // location            Locations             @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  userId              String?               @map("user_id")
+  // user                Users                 @relation("AssetUser", fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  lenderId            String?               @map("lender_id")
+  // lender              Users                 @relation("AssetLender", fields: [lenderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 }
 
 model NetworkDevices {

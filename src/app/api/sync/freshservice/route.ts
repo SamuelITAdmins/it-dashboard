@@ -1,6 +1,6 @@
 // src/app/api/sync/freshservice/route.ts
 import { prisma } from "@/lib/prisma";
-import { fetchFSTickets, fetchFSAgents, createAgentEmailMap, resolveTicketUserIds, mapFSTicketToDb } from "@/lib/freshservice";
+import { fetchFSTickets, fetchFSAgents, createAgentEmailMap, resolveTicketUserIds, mapFSTicketToDb, fetchFSAssets, mapFSAssetToDb } from "@/lib/freshservice";
 
 export async function POST() {
   try {
@@ -22,7 +22,6 @@ export async function POST() {
         // Map ticket data
         const ticketData = mapFSTicketToDb(fsTicket, userIds);
 
-        // Upsert to database
         await prisma.tickets.upsert({
           where: { fsTicketId: ticketData.fsTicketId },
           update: ticketData,
@@ -34,9 +33,30 @@ export async function POST() {
       }
     }
 
+    // Fetch assets
+    console.log('Fetching Freshservice assets...');
+    const fsAssets = await fetchFSAssets();
+
+    for (const fsAsset of fsAssets) {
+      // Map asset data
+      const assetData = mapFSAssetToDb(fsAsset);
+
+      try {
+        await prisma.assets.upsert({
+          where: { fsAssetId: assetData.fsAssetId },
+          update: assetData,
+          create: assetData
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`Skipping ticket ${fsAsset.name}:`, errorMessage);
+      }
+    }
+    
+
     return Response.json({
       success: true,
-      message: `Synced ${fsTickets.length} tickets with ${fsAgents.length} agents`
+      message: `Synced ${fsTickets.length} tickets and ${fsAssets.length} assets with ${fsAgents.length} agents`
     });
     
   } catch (error) {
